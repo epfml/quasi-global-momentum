@@ -54,10 +54,7 @@ class Adam(Optimizer):
         self.momentum_buffer2.buffer = torch.zeros_like(flatten_params.buffer)
 
         # init the conf for slow buffer.
-        if conf.slow_buffer_conf is not None and conf.slow_buffer_conf != "None":
-            self.conf.slow_buffer_conf_ = dict_parser(conf.slow_buffer_conf)
-        else:
-            raise NotImplementedError("the slow_buffer_conf_ should not be None")
+        self.conf.slow_buffer_conf_ = dict_parser(conf.slow_buffer_conf)
 
     def __setstate__(self, state):
         super(Adam, self).__setstate__(state)

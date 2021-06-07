@@ -1,5 +1,8 @@
 # Getting started
-Our experiments heavily rely on `Docker` and `Kubernetes`. For the detailed experimental environment setup, please refer to dockerfile under the `environments` folder.
+## Requirements
+Our implementations heavily rely on `Docker` and the detailed environment setup refers to `Dockerfile` under the `../environments` folder.
+
+By running command `docker-compose build` under the folder `environments`, you can build our main docker image `pytorch-mpi`.
 
 
 ## Use case of distributed training (centralized/decentralized)
@@ -17,6 +20,7 @@ Some simple explanation of the arguments used in the code.
     * The `optimizer` will decide the type of distributed training, e.g., centralized SGD, decentralized SGD
 * Arguments related to *learning*:
     * The `lr_scaleup`, `lr_warmup` and `lr_warmup_epochs` will decide if we want to scale up the learning rate, or warm up the learning rate. For more details, please check `pcode/create_scheduler.py`.
+
 
 
 ### Examples
@@ -55,9 +59,9 @@ declare -a list_of_seeds=6
 declare -a non_iid_ness=1
 
 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 $HOME/conda/envs/pytorch-py3.6/bin/python run.py \
---arch distilbert-base-uncased --optimizer ${optimizer} --bert_conf model_scheme=vector_cls_sentence,max_seq_len=200,eval_every_batch=100 \
+--arch distilbert-base-uncased --optimizer ${optimizer} --bert_conf model_scheme=vector_cls_sentence,max_seq_len=128,eval_every_batch=100 \
 --experiment demo --manual_seed ${list_of_seeds} \
---data agnews --pin_memory True --batch_size 32 --base_batch_size 64 --num_workers 0 \
+--data agnews --pin_memory True --batch_size 32 --base_batch_size 32 --num_workers 0 \
 --num_epochs 10 --partition_data random --reshuffle_per_epoch False --stop_criteria epoch \
 --n_mpi_process ${list_of_n_processes} --n_sub_process 1 --world 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 \
 --on_cuda True --use_ipc False \
@@ -129,9 +133,9 @@ declare -a list_of_seeds=6
 declare -a non_iid_ness=1
 
 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 $HOME/conda/envs/pytorch-py3.6/bin/python run.py \
---arch distilbert-base-uncased --optimizer ${optimizer} --bert_conf model_scheme=vector_cls_sentence,max_seq_len=200,eval_every_batch=100 \
+--arch distilbert-base-uncased --optimizer ${optimizer} --bert_conf model_scheme=vector_cls_sentence,max_seq_len=128,eval_every_batch=100 \
 --experiment demo --manual_seed ${list_of_seeds} \
---data agnews --pin_memory True --batch_size 32 --base_batch_size 64 --num_workers 0 \
+--data agnews --pin_memory True --batch_size 32 --base_batch_size 32 --num_workers 0 \
 --num_epochs 10 --partition_data non_iid_dirichlet --non_iid_alpha ${non_iid_ness} --reshuffle_per_epoch False --stop_criteria epoch \
 --n_mpi_process ${list_of_n_processes} --n_sub_process 1 --world 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 \
 --on_cuda True --use_ipc False \
