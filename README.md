@@ -1,7 +1,7 @@
 # Quasi-Global Momentum
 This repository is the official implementation of the paper: [Quasi-Global Momentum: Accelerating Decentralized Deep Learning on Heterogeneous Data](https://arxiv.org/abs/2102.04761), appeared in ICML 2021.
 
-**Abstract:**
+## Abstract
 Decentralized training of deep learning models
 is a key element for enabling data privacy and on-device learning over networks.
 In realistic learning scenarios,
