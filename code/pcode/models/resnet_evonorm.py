@@ -9,6 +9,9 @@ import torch.nn as nn
 
 __all__ = ["resnet_evonorm"]
 
+"""This EvoNorm implementation adapts the design from Evolving Normalization-Activation Layers, https://arxiv.org/abs/2004.02967. 
+But it is not identical to the original paper."""
+
 
 class SwishImplementation(torch.autograd.Function):
     @staticmethod
@@ -151,20 +154,11 @@ class BasicBlock(nn.Module):
         planes,
         stride=1,
         downsample=None,
-        groups=1,
-        base_width=64,
         dilation=1,
         version="S0",
-        norm_layer=None,
-        use_bn_stat=False,
     ):
         super(BasicBlock, self).__init__()
-        if norm_layer is None:
-            norm_layer = functools.partial(
-                nn.BatchNorm2d, track_running_stats=use_bn_stat
-            )
-        if groups != 1 or base_width != 64:
-            raise ValueError("BasicBlock only supports groups=1 and base_width=64")
+        norm_layer = functools.partial(nn.BatchNorm2d, track_running_stats=False)
         if dilation > 1:
             raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
@@ -210,14 +204,9 @@ class Bottleneck(nn.Module):
         stride=1,
         downsample=None,
         version="S0",
-        norm_layer=None,
-        use_bn_stat=False,
     ):
         super(Bottleneck, self).__init__()
-        if norm_layer is None:
-            norm_layer = functools.partial(
-                nn.BatchNorm2d, track_running_stats=use_bn_stat
-            )
+        norm_layer = functools.partial(nn.BatchNorm2d, track_running_stats=False)
         self.conv1 = nn.Conv2d(
             in_channels=in_planes, out_channels=out_planes, kernel_size=1, bias=False
         )
@@ -273,13 +262,10 @@ class ResNet_cifar(nn.Module):
         dataset,
         resnet_size,
         scaling=1,
-        save_activations=False,
-        use_bn_stat=False,
         version="S0",
     ):
         super(ResNet_cifar, self).__init__()
         self.dataset = dataset
-        self.use_bn_stat = use_bn_stat
         self.version = "S0" if version is None else version
 
         # define model.
@@ -327,10 +313,6 @@ class ResNet_cifar(nn.Module):
         # weight initialization based on layer type.
         self._weight_initialization()
 
-        # a placeholder for activations in the intermediate layers.
-        self.save_activations = save_activations
-        self.activations = None
-
     def _decide_num_classes(self):
         if self.dataset == "cifar10" or self.dataset == "svhn":
             return 10
@@ -364,9 +346,7 @@ class ResNet_cifar(nn.Module):
                     stride=stride,
                     bias=False,
                 ),
-                nn.BatchNorm2d(
-                    planes * block_fn.expansion, track_running_stats=self.use_bn_stat
-                ),
+                nn.BatchNorm2d(planes * block_fn.expansion, track_running_stats=False),
             )
 
         layers = []
@@ -376,14 +356,19 @@ class ResNet_cifar(nn.Module):
                 planes=planes,
                 stride=stride,
                 downsample=downsample,
-                use_bn_stat=self.use_bn_stat,
                 version=self.version,
             )
         )
         self.inplanes = planes * block_fn.expansion
 
         for _ in range(1, block_num):
-            layers.append(block_fn(in_planes=self.inplanes, planes=planes))
+            layers.append(
+                block_fn(
+                    in_planes=self.inplanes,
+                    planes=planes,
+                    version=self.version,
+                )
+            )
         return nn.Sequential(*layers)
 
     def forward(self, x):
@@ -391,25 +376,18 @@ class ResNet_cifar(nn.Module):
         x = self.evo1(x)
 
         x = self.layer1(x)
-        activation1 = x.clone()
         x = self.layer2(x)
-        activation2 = x.clone()
         x = self.layer3(x)
-        activation3 = x.clone()
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
-
-        if self.save_activations:
-            self.activations = [activation1, activation2, activation3]
         return x
 
 
 class ResNet_imagenet(nn.Module):
-    def __init__(self, dataset, resnet_size, use_bn_stat=False, version="S0"):
+    def __init__(self, dataset, resnet_size, version="S0"):
         super(ResNet_imagenet, self).__init__()
         self.dataset = dataset
-        self.use_bn_stat = use_bn_stat
         self.version = "S0" if version is None else version
 
         # define model param.
@@ -482,8 +460,7 @@ class ResNet_imagenet(nn.Module):
                         (
                             "bn",
                             nn.BatchNorm2d(
-                                planes * block_fn.expansion,
-                                track_running_stats=self.use_bn_stat,
+                                planes * block_fn.expansion, track_running_stats=False
                             ),
                         ),
                     ]
@@ -497,14 +474,19 @@ class ResNet_imagenet(nn.Module):
                 planes,
                 stride=stride,
                 downsample=downsample,
-                use_bn_stat=self.use_bn_stat,
                 version=self.version,
             )
         )
         self.inplanes = planes * block_fn.expansion
 
         for _ in range(1, block_num):
-            layers.append(block_fn(self.inplanes, planes))
+            layers.append(
+                block_fn(
+                    self.inplanes,
+                    planes,
+                    version=self.version,
+                )
+            )
         return nn.Sequential(*layers)
 
     def _decide_num_classes(self):
@@ -562,7 +544,6 @@ def resnet_evonorm(conf, arch=None):
             dataset=dataset,
             resnet_size=resnet_size,
             scaling=conf.resnet_scaling,
-            use_bn_stat=not conf.freeze_bn,
             version=conf.evonorm_version,
         )
     elif "imagenet" in dataset:
@@ -575,14 +556,14 @@ def resnet_evonorm(conf, arch=None):
 if __name__ == "__main__":
 
     print("cifar10")
-    net = ResNet_cifar(dataset="cifar10", resnet_size=20, scaling=1, use_bn_stat=False)
+    net = ResNet_cifar(dataset="cifar10", resnet_size=20, scaling=1)
     print(net)
     x = torch.randn(16, 3, 32, 32)
     y = net(x)
     print(y.shape)
 
     print("imagenet")
-    net = ResNet_imagenet(dataset="imagenet", resnet_size=18, use_bn_stat=False)
+    net = ResNet_imagenet(dataset="imagenet", resnet_size=18)
     print(net)
     x = torch.randn(16, 3, 224, 224)
     y = net(x)
