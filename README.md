@@ -24,10 +24,11 @@ If you use the code, please cite the following paper:
 
 ```
 @inproceedings{lin2021quasi,
-  title={Quasi-global momentum: Accelerating decentralized deep learning on heterogeneous data},
-  author={Lin, Tao and Karimireddy, Sai Praneeth and Stich, Sebastian U and Jaggi, Martin},
-  booktitle={International Conference on Machine Learning},
-  year={2021}
+  title     = {Quasi-global momentum: Accelerating decentralized deep learning on heterogeneous data},
+  author    = {Lin, Tao and Karimireddy, Sai Praneeth and Stich, Sebastian U and Jaggi, Martin},
+  booktitle = {International Conference on Machine Learning},
+  url       = {https://arxiv.org/abs/2102.04761},
+  year      = {2021}
 }
 ```
 
