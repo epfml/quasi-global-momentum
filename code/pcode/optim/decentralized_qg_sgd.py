@@ -103,32 +103,7 @@ class SGD(Optimizer):
                     to_be_applied = momentum_buffer
 
             # apply on the model params (and we may clip the update).
-            flatten_grads.buffer = to_be_applied * self.param_groups[0]["lr"]
-            if (
-                "clip_update" in self.conf.slow_buffer_conf_
-                and self.conf.slow_buffer_conf_["clip_update"]
-            ):
-                assert "clip_update_max_norm" in self.conf.slow_buffer_conf_
-                norm_type = (
-                    self.conf.slow_buffer_conf_["clip_update_norm_type"]
-                    if "clip_update_norm_type" in self.conf.slow_buffer_conf_
-                    else 2.0
-                )
-
-                total_norm = torch.norm(
-                    torch.stack(
-                        [torch.norm(grad, norm_type) for grad in flatten_grads]
-                    ),
-                    norm_type,
-                )
-                clip_coef = self.conf.slow_buffer_conf_["clip_update_max_norm"] / (
-                    total_norm + 1e-6
-                )
-                if clip_coef < 1:
-                    for grad in flatten_grads:
-                        grad.data.mul_(clip_coef)
-            # update the model (with maybe clipped update)
-            flatten_params.buffer.add_(-flatten_grads.buffer)
+            flatten_params.buffer.add_(-to_be_applied * self.param_groups[0]["lr"])
 
         # sync.
         with kargs["timer"]("sync.sync_params", epoch=self.conf.epoch_):
