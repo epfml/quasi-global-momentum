@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu16.04
+FROM nvidia/cuda:11.2.1-cudnn8-devel-ubuntu18.04
 
 
 # install some necessary tools.
@@ -8,61 +8,46 @@ RUN apt-get update \
         build-essential \
         ca-certificates \
         pkg-config \
-        software-properties-common
-RUN apt-get install -y \
-        inkscape \
-        jed \
-        libsm6 \
-        libxext-dev \
-        libxrender1 \
-        lmodern \
-        libcurl3-dev \
-        libfreetype6-dev \
-        libzmq3-dev \
-        libcupti-dev \
-        pkg-config \
-        libav-tools \
-        libjpeg-dev \
-        libpng-dev \
-        zlib1g-dev \
-        locales
-RUN apt-get install -y \
-        sudo \
-        rsync \
-        cmake \
+        software-properties-common \
         g++ \
+        sudo \
+        ccache \
+        cmake \
+        libjpeg-dev \
+        libpng-dev
+RUN apt-get install -y \
+        rsync \
         swig \
-        vim \
-        git \
         curl \
+        git \
+        vim \
         wget \
         unzip \
         zsh \
-        git \
         screen \
         tmux \
         openssh-server
 RUN apt-get update && \
         apt-get install -y pciutils net-tools iputils-ping && \
-        apt-get install -y htop
-RUN add-apt-repository ppa:openjdk-r/ppa \
-        && apt-get update \
-        && apt-get install -y \
-        openjdk-7-jdk \
-        openjdk-7-jre-headless
+        apt-get install -y htop && \
+        rm -rf /var/lib/apt/lists/*
+
+RUN /usr/sbin/update-ccache-symlinks
+RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache
+
 # install good vim.
 RUN curl http://j.mp/spf13-vim3 -L -o - | sh
 
 # configure environments.
+RUN apt-get update && apt-get install -y locales && rm -rf /var/lib/apt/lists/*
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
 
 # configure user.
-# TODO: change it based on your information.
 ENV SHELL=/bin/bash \
-        NB_USER=user \
-        NB_UID=1000 \
-        NB_GROUP=1000 \
-        NB_GID=1000
+        NB_USER=lin \
+        NB_UID=144057 \
+        NB_GROUP=MLO-unit \
+        NB_GID=11169
 ENV HOME=/home/$NB_USER
 
 ADD base/fix-permissions /usr/local/bin/fix-permissions
@@ -74,8 +59,7 @@ RUN useradd -m -s /bin/bash -N -u $NB_UID -g $NB_GID $NB_USER && \
         echo "${NB_USER}:${NB_USER}" | chpasswd && \
         usermod -aG sudo,adm,root ${NB_USER} && \
         fix-permissions $HOME
-# TODO: change user to your NB_USER
-RUN echo 'user ALL=(ALL) NOPASSWD: ALL' | sudo EDITOR='tee -a' visudo
+RUN echo 'lin ALL=(ALL) NOPASSWD: ALL' | sudo EDITOR='tee -a' visudo
 
 # Default ssh config file that skips (yes/no) question when first login to the host
 RUN mkdir /var/run/sshd

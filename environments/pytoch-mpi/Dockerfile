@@ -1,4 +1,4 @@
-FROM user/base
+FROM itamtao/base
 
 USER $NB_USER
 WORKDIR $HOME
