@@ -36,7 +36,7 @@ RUN cd pytorch && \
     CMAKE_PREFIX_PATH="$(dirname $(which $HOME/conda/bin/conda))/../" \
     pip install -v .
 RUN $HOME/conda/bin/conda install --name pytorch-py$PYTHON_VERSION  av -c conda-forge
-RUN git clone https://github.com/pytorch/vision.git && cd vision && python setup.py install
+RUN git clone https://github.com/pytorch/vision.git && cd vision && git checkout tags/v0.9.2-rc2 && $HOME/conda/envs/pytorch-py$PYTHON_VERSION/bin/python setup.py install
 RUN $HOME/conda/envs/pytorch-py$PYTHON_VERSION/bin/pip install --upgrade git+https://github.com/pytorch/text
 
 RUN $HOME/conda/envs/pytorch-py$PYTHON_VERSION/bin/pip install spacy
