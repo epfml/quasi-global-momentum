@@ -41,7 +41,7 @@ def define_optimizer(conf, model):
 
         optim_class = Adam
     elif conf.optimizer == "decentralized_qg_adam":
-        from pcode.optim.decentralized_qg_adam import Adam
+        from pcode.optim.decentralized_qg_adam_v2 import Adam
 
         optim_class = Adam
     elif conf.optimizer == "decentralized_d2":
