@@ -3,6 +3,10 @@ FROM nvidia/cuda:11.2.1-cudnn8-devel-ubuntu18.04
 
 # install some necessary tools.
 RUN echo "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1604/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
+# fixed context due to cannot take anywhere to build
+RUN rm /etc/apt/sources.list.d/cuda.list
+RUN rm /etc/apt/sources.list.d/nvidia-ml.list
+
 RUN apt-get update \
         && apt-get install -y --no-install-recommends \
         build-essential \
